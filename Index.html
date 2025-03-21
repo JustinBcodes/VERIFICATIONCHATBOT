@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>News Verification Chatbot</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@2.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f7f7f8;
+            --container-bg: #ffffff;
+            --text-color: #333333;
+            --user-msg-bg: #e3f2fd;
+            --user-msg-color: #0d47a1;
+            --bot-msg-bg: #ffffff;
+            --bot-msg-color: #333333;
+            --bot-msg-shadow: rgba(0,0,0,0.1);
+            --input-bg: #ffffff;
+            --input-border: #dddddd;
+            --input-focus: #2196f3;
+            --button-bg: #2196f3;
+            --button-hover: #1976d2;
+            --button-disabled: #b0bec5;
+            --divider-color: #eaeaea;
+            --source-link: #1976d2;
+            --high-confidence-bg: #e8f5e9;
+            --high-confidence-text: #2e7d32;
+            --medium-confidence-bg: #fff3e0;
+            --medium-confidence-text: #ef6c00;
+            --low-confidence-bg: #ffebee;
+            --low-confidence-text: #c62828;
+        }
+
+        .dark-mode {
+            --bg-color: #1a1a1a;
+            --container-bg: #252525;
+            --text-color: #e0e0e0;
+            --user-msg-bg: #1e3a5f;
+            --user-msg-color: #a9caf1;
+            --bot-msg-bg: #2d2d2d;
+            --bot-msg-color: #e0e0e0;
+            --bot-msg-shadow: rgba(0,0,0,0.3);
+            --input-bg: #333333;
+            --input-border: #555555;
+            --input-focus: #0d6efd;
+            --button-bg: #0d6efd;
+            --button-hover: #0a58ca;
+            --button-disabled: #64748b;
+            --divider-color: #444444;
+            --source-link: #90caf9;
+            --high-confidence-bg: #143d19;
+            --high-confidence-text: #81c784;
+            --medium-confidence-bg: #4d3000;
+            --medium-confidence-text: #ffb74d;
+            --low-confidence-bg: #4b1113;
+            --low-confidence-text: #ef9a9a;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--text-color);
+            transition: background-color 0.3s ease;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .main-container {
+            width: 95%;
+            max-width: 700px;
+            margin: 1rem auto;
+            background-color: var(--container-bg);
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 90vh;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem 1rem;
+            scroll-behavior: smooth;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .message {
+            max-width: 85%;
+            margin-bottom: 1.5rem;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            position: relative;
+            line-height: 1.5;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            word-break: break-word;
+        }
+        
+        .user-message {
+            background-color: var(--user-msg-bg);
+            color: var(--user-msg-color);
+            margin-left: auto;
+            margin-right: 1rem;
+        }
+        
+        .bot-message {
+            background-color: var(--bot-msg-bg);
+            color: var(--bot-msg-color);
+            margin-right: auto;
+            margin-left: 1rem;
+            box-shadow: 0 1px 2px var(--bot-msg-shadow);
+        }
+        
+        .message-container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+        
+        .input-container {
+            padding: 1rem;
+            background-color: var(--container-bg);
+            border-top: 1px solid var(--divider-color);
+            display: flex;
+            align-items: center;
+            transition: background-color 0.3s ease;
+        }
+        
+        .input-field {
+            flex-grow: 1;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--input-border);
+            border-radius: 0.5rem;
+            outline: none;
+            font-size: 1rem;
+            margin-right: 0.5rem;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            transition: border-color 0.3s ease, background-color 0.3s ease, color 0.3s ease;
+        }
+        
+        .input-field:focus {
+            border-color: var(--input-focus);
+            box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+        }
+        
+        .send-button {
+            background-color: var(--button-bg);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+        }
+        
+        .send-button:hover {
+            background-color: var(--button-hover);
+        }
+        
+        .send-button:disabled {
+            background-color: var(--button-disabled);
+            cursor: not-allowed;
+        }
+        
+        .bot-typing {
+            display: flex;
+            align-items: center;
+            margin-left: 1rem;
+            margin-bottom: 1rem;
+            color: var(--text-color);
+        }
+        
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            margin: 0 1px;
+            border-radius: 50%;
+            display: inline-block;
+            animation: typing-dot 1.4s infinite ease-in-out both;
+            background-color: var(--text-color);
+        }
+        
+        .typing-dot:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+        
+        .typing-dot:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+        
+        @keyframes typing-dot {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+        
+        .sources-container {
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid var(--divider-color);
+            font-size: 0.85rem;
+            color: var(--text-color);
+            opacity: 0.8;
+        }
+        
+        .source-item {
+            margin-bottom: 0.25rem;
+        }
+        
+        .source-link {
+            color: var(--source-link);
+            text-decoration: none;
+        }
+        
+        .source-link:hover {
+            text-decoration: underline;
+        }
+        
+        .confidence-indicator {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        
+        .high-confidence {
+            background-color: var(--high-confidence-bg);
+            color: var(--high-confidence-text);
+        }
+        
+        .medium-confidence {
+            background-color: var(--medium-confidence-bg);
+            color: var(--medium-confidence-text);
+        }
+        
+        .low-confidence {
+            background-color: var(--low-confidence-bg);
+            color: var(--low-confidence-text);
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background-color: var(--container-bg);
+            border-bottom: 1px solid var(--divider-color);
+            transition: background-color 0.3s ease;
+        }
+        
+        .theme-toggle {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.5rem;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            transition: background-color 0.3s ease;
+        }
+        
+        .theme-toggle:hover {
+            background-color: rgba(128, 128, 128, 0.1);
+        }
+        
+        @media (max-width: 640px) {
+            .main-container {
+                height: 95vh;
+                width: 100%;
+                margin: 0;
+                border-radius: 0;
+            }
+            
+            .message {
+                max-width: 95%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="header">
+            <h1 class="text-xl font-bold">News Verification Assistant</h1>
+            <!-- Wrapped the theme toggle and JB label together -->
+            <div style="display: flex; align-items: center;">
+                <button id="themeToggle" class="theme-toggle" aria-label="Toggle dark mode">
+                    <i class="ri-sun-line" id="lightIcon"></i>
+                    <i class="ri-moon-line" id="darkIcon" style="display: none;"></i>
+                </button>
+                <span style="margin-left: 0.5rem; font-size: 1rem; font-weight: bold; color: var(--text-color);">JB</span>
+            </div>
+        </div>
+        
+        <div class="chat-container" id="chatContainer">
+            <!-- Chat messages will be added here dynamically -->
+        </div>
+        
+        <div class="input-container">
+            <input 
+                type="text" 
+                id="userInput" 
+                class="input-field" 
+                placeholder="Ask about any news or information..."
+                autocomplete="off"
+                aria-label="Message input"
+            >
+            <button id="sendButton" class="send-button" aria-label="Send message">
+                <i class="ri-send-plane-fill mr-1"></i> Send
+            </button>
+        </div>
+    </div>
+    
+    <script>
+        // Cache DOM elements
+        const DOM = {};
+        
+        // Global variables
+        let conversationId = null;
+        let isSubmitting = false;
+        const DEBOUNCE_DELAY = 300; // ms
+        
+        // Initialize the app
+        function init() {
+            // Cache DOM elements for better performance
+            cacheElements();
+            
+            // Setup event listeners
+            setupEventListeners();
+            
+            // Setup theme based on preferences
+            setupTheme();
+            
+            // Add welcome message
+            addBotMessage("Hello! I am your personal verification assistant. Feel free to ask me anything regarding news, sports, or any topic. I'm also here for casual conversation!");
+        }
+        
+        // Cache DOM elements for performance
+        function cacheElements() {
+            DOM.chatContainer = document.getElementById('chatContainer');
+            DOM.userInput = document.getElementById('userInput');
+            DOM.sendButton = document.getElementById('sendButton');
+            DOM.themeToggle = document.getElementById('themeToggle');
+            DOM.lightIcon = document.getElementById('lightIcon');
+            DOM.darkIcon = document.getElementById('darkIcon');
+        }
+        
+        // Set up all event listeners
+        function setupEventListeners() {
+            // Input events
+            DOM.userInput.addEventListener('keypress', handleKeyPress);
+            DOM.userInput.addEventListener('input', handleInputChange);
+            
+            // Button events
+            DOM.sendButton.addEventListener('click', handleSendClick);
+            DOM.themeToggle.addEventListener('click', handleThemeToggle);
+        }
+        
+        // Set up theme based on preferences
+        function setupTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            
+            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+                document.body.classList.add('dark-mode');
+                DOM.lightIcon.style.display = 'none';
+                DOM.darkIcon.style.display = 'block';
+            }
+            
+            // Add listener for system theme changes
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+                if (!localStorage.getItem('theme')) {
+                    document.body.classList.toggle('dark-mode', e.matches);
+                    DOM.lightIcon.style.display = e.matches ? 'none' : 'block';
+                    DOM.darkIcon.style.display = e.matches ? 'block' : 'none';
+                }
+            });
+        }
+        
+        // Event Handlers
+        function handleKeyPress(e) {
+            if (e.key === 'Enter' && !isSubmitting && DOM.userInput.value.trim()) {
+                sendMessage();
+            }
+        }
+        
+        function handleInputChange() {
+            const isEmpty = !DOM.userInput.value.trim();
+            DOM.sendButton.disabled = isEmpty;
+            
+            if (isEmpty) {
+                DOM.sendButton.classList.add('opacity-50');
+            } else {
+                DOM.sendButton.classList.remove('opacity-50');
+            }
+        }
+        
+        function handleSendClick() {
+            if (!isSubmitting && DOM.userInput.value.trim()) {
+                sendMessage();
+            }
+        }
+        
+        function handleThemeToggle() {
+            document.body.classList.toggle('dark-mode');
+            
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+            
+            DOM.lightIcon.style.display = isDarkMode ? 'none' : 'block';
+            DOM.darkIcon.style.display = isDarkMode ? 'block' : 'none';
+        }
+        
+        // Core functions
+        function sendMessage() {
+            if (isSubmitting) return;
+            
+            const text = DOM.userInput.value.trim();
+            if (!text) return;
+            
+            // Prevent multiple submissions
+            isSubmitting = true;
+            DOM.sendButton.disabled = true;
+            
+            // Clear input
+            DOM.userInput.value = '';
+            
+            // Add message to chat
+            addUserMessage(text);
+            
+            // Show typing indicator
+            showTypingIndicator();
+            
+            // Send to backend with delay to prevent flooding
+            setTimeout(() => {
+                getBotResponse(text)
+                    .finally(() => {
+                        isSubmitting = false;
+                        DOM.sendButton.disabled = false;
+                    });
+            }, DEBOUNCE_DELAY);
+        }
+        
+        function addUserMessage(text) {
+            const messageContainer = document.createElement('div');
+            messageContainer.className = 'message-container';
+            
+            const messageElement = document.createElement('div');
+            messageElement.className = 'message user-message';
+            messageElement.textContent = text;
+            
+            messageContainer.appendChild(messageElement);
+            DOM.chatContainer.appendChild(messageContainer);
+            
+            scrollToBottom();
+        }
+        
+        function addBotMessage(text, sources = [], confidence = null) {
+            // Remove typing indicator if present
+            removeTypingIndicator();
+            
+            const messageContainer = document.createElement('div');
+            messageContainer.className = 'message-container';
+            
+            const messageElement = document.createElement('div');
+            messageElement.className = 'message bot-message';
+            
+            // Process text
+            let cleanedText = processMessageText(text);
+            
+            // Add confidence indicator if available
+            if (confidence !== null) {
+                const confidenceElement = createConfidenceElement(confidence);
+                messageElement.appendChild(confidenceElement);
+            }
+            
+            // Add main message content
+            const messageContent = document.createElement('div');
+            messageContent.innerHTML = cleanedText;
+            messageElement.appendChild(messageContent);
+            
+            // Add sources if available
+            if (sources && sources.length > 0) {
+                const sourcesContainer = createSourcesContainer(sources);
+                messageElement.appendChild(sourcesContainer);
+            }
+            
+            messageContainer.appendChild(messageElement);
+            DOM.chatContainer.appendChild(messageContainer);
+            
+            scrollToBottom();
+        }
+        
+        function processMessageText(text) {
+            let cleanedText = text;
+            
+            // Remove "Assistant:" prefix if present
+            cleanedText = cleanedText.replace(/^Assistant:\s*/i, '');
+            
+            // Remove "You are a helpful..." prefix if present
+            cleanedText = cleanedText.replace(/^You are a helpful.*?Human:.*?Assistant:\s*/s, '');
+            
+            // Handle markdown-style formatting
+            cleanedText = cleanedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            cleanedText = cleanedText.replace(/\_(.*?)\_/g, '<em>$1</em>');
+            
+            // Handle markdown-style links
+            cleanedText = cleanedText.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" class="source-link" target="_blank" rel="noopener noreferrer">$1</a>');
+            
+            // Add line breaks
+            cleanedText = cleanedText.replace(/\n/g, '<br>');
+            
+            return cleanedText;
+        }
+        
+        function createConfidenceElement(confidence) {
+            const confidenceElement = document.createElement('div');
+            let confidenceClass = 'confidence-indicator ';
+            
+            if (confidence >= 70) {
+                confidenceClass += 'high-confidence';
+                confidenceElement.textContent = `High Confidence (${confidence}%)`;
+            } else if (confidence >= 40) {
+                confidenceClass += 'medium-confidence';
+                confidenceElement.textContent = `Medium Confidence (${confidence}%)`;
+            } else {
+                confidenceClass += 'low-confidence';
+                confidenceElement.textContent = `Low Confidence (${confidence}%)`;
+            }
+            
+            confidenceElement.className = confidenceClass;
+            return confidenceElement;
+        }
+        
+        function createSourcesContainer(sources) {
+            const sourcesContainer = document.createElement('div');
+            sourcesContainer.className = 'sources-container';
+            
+            const sourcesTitle = document.createElement('div');
+            sourcesTitle.className = 'font-bold mb-1';
+            sourcesTitle.textContent = 'Sources:';
+            sourcesContainer.appendChild(sourcesTitle);
+            
+            const sourcesList = document.createElement('div');
+            
+            sources.forEach(source => {
+                if (source.title && source.url) {
+                    const sourceItem = document.createElement('div');
+                    sourceItem.className = 'source-item';
+                    
+                    const sourceLink = document.createElement('a');
+                    sourceLink.href = source.url;
+                    sourceLink.className = 'source-link';
+                    sourceLink.target = '_blank';
+                    sourceLink.rel = 'noopener noreferrer';
+                    sourceLink.textContent = `${source.title} - ${source.source || 'Unknown Source'}`;
+                    
+                    sourceItem.appendChild(sourceLink);
+                    sourcesList.appendChild(sourceItem);
+                }
+            });
+            
+            sourcesContainer.appendChild(sourcesList);
+            return sourcesContainer;
+        }
+        
+        function showTypingIndicator() {
+            removeTypingIndicator(); // Ensure no duplicate indicators
+            
+            const typingContainer = document.createElement('div');
+            typingContainer.className = 'bot-typing';
+            typingContainer.id = 'typingIndicator';
+            
+            for (let i = 0; i < 3; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'typing-dot';
+                typingContainer.appendChild(dot);
+            }
+            
+            DOM.chatContainer.appendChild(typingContainer);
+            scrollToBottom();
+        }
+        
+        function removeTypingIndicator() {
+            const typingIndicator = document.getElementById('typingIndicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+        
+        function scrollToBottom() {
+            // Use requestAnimationFrame for smoother scrolling
+            requestAnimationFrame(() => {
+                DOM.chatContainer.scrollTop = DOM.chatContainer.scrollHeight;
+            });
+        }
+        
+        // API Communication
+        async function getBotResponse(text) {
+            const requestBody = {
+                message: text,
+                conversationId: conversationId
+            };
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/verify', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Server responded with status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // Store conversation ID for context
+                if (data.conversationId) {
+                    conversationId = data.conversationId;
+                }
+                
+                addBotMessage(data.response, data.sources, data.confidence);
+                
+            } catch (error) {
+                console.error('Error:', error);
+                addBotMessage("I'm sorry, I encountered an error while processing your request. Please try again.");
+            }
+        }
+        
+        // Initialize the app when DOM is fully loaded
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
